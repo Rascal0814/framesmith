@@ -95,11 +95,14 @@ export const api = {
       return category ? MOCK_VIDEOS.filter(v => v.category === category) : MOCK_VIDEOS;
     }
     try {
-      // 使用raw URL不需要认证
-      const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/public/videos.json`;
-      const response = await fetch(url);
+      const token = getToken();
+      const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos.json`;
+      const response = await fetch(url, { 
+        headers: token ? { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } : { 'Accept': 'application/vnd.github.v3+json' }
+      });
       if (response.ok) {
-        const content = await response.json();
+        const data = await response.json();
+        const content = JSON.parse(base64ToUtf8(data.content));
         return category ? content.videos.filter(v => v.category === category) : content.videos || [];
       }
     } catch (e) {
@@ -257,7 +260,7 @@ export const api = {
   updateVideo: async (id, updates) => {
     const token = getToken();
     if (!token || !getIsOwner()) throw new Error('无权限');
-    const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/public/videos.json`;
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos.json`;
     const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
     const data = await resp.json();
     const sha = data.sha;
