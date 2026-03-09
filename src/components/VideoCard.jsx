@@ -20,14 +20,17 @@ function VideoCard({ video }) {
   return (
     <Link to={`/video/${video.id}`} className="video-card">
       <div className="video-thumbnail">
-        <video 
-          ref={videoRef}
-          src={video.video_url} 
-          poster={video.thumbnail}
-          muted 
-          playsInline 
-          onLoadedMetadata={e => setDuration(Math.round(e.target.duration))}
-        />
+        {video.thumbnail ? (
+          <img src={video.thumbnail} alt={video.title} />
+        ) : (
+          <video 
+            ref={videoRef}
+            src={video.video_url} 
+            muted 
+            playsInline 
+            onLoadedMetadata={e => setDuration(Math.round(e.target.duration))}
+          />
+        )}
         {duration > 0 && <span className="duration">{formatDuration(duration)}</span>}
       </div>
       <div className="video-info">
