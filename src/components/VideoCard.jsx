@@ -23,6 +23,7 @@ function VideoCard({ video }) {
         <video 
           ref={videoRef}
           src={video.video_url} 
+          poster={video.thumbnail}
           muted 
           playsInline 
           onLoadedMetadata={e => setDuration(Math.round(e.target.duration))}
