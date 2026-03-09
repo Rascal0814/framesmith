@@ -25,18 +25,32 @@ const MOCK_USER = {
 
 const MOCK_CATEGORIES = ["广告宣传", "产品展示", "游戏", "文化", "金融", "短视频", "纪录片"];
 
-// 生产环境从GitHub获取视频列表
 const USE_MOCK = false;
-
 const REPO_OWNER = 'Rascal0814';
 const REPO_NAME = 'framesmith';
 const BRANCH = 'main';
 
 let githubToken = '';
+let isOwner = false;
 
-export const setToken = (token) => {
+export const setToken = async (token) => {
   githubToken = token;
   localStorage.setItem('github_token', token);
+  
+  // 验证token并检查是否是owner
+  try {
+    const response = await fetch('https://api.github.com/user', {
+      headers: { 'Authorization': `token ${token}` }
+    });
+    if (response.ok) {
+      const user = await response.json();
+      isOwner = user.login === REPO_OWNER;
+      localStorage.setItem('is_owner', isOwner ? 'true' : 'false');
+    }
+  } catch (e) {
+    isOwner = false;
+  }
+  return isOwner;
 };
 
 export const getToken = () => {
@@ -46,7 +60,20 @@ export const getToken = () => {
   return githubToken;
 };
 
-// Base64编码支持中文
+export const getIsOwner = () => {
+  if (!isOwner) {
+    isOwner = localStorage.getItem('is_owner') === 'true';
+  }
+  return isOwner;
+};
+
+export const logout = () => {
+  githubToken = '';
+  isOwner = false;
+  localStorage.removeItem('github_token');
+  localStorage.removeItem('is_owner');
+};
+
 function utf8ToBase64(str) {
   return btoa(unescape(encodeURIComponent(str)));
 }
@@ -58,36 +85,26 @@ function base64ToUtf8(str) {
 export const api = {
   getVideos: async (category = '') => {
     if (USE_MOCK) {
-      return category 
-        ? MOCK_VIDEOS.filter(v => v.category === category)
-        : MOCK_VIDEOS;
+      return category ? MOCK_VIDEOS.filter(v => v.category === category) : MOCK_VIDEOS;
     }
     
     try {
       const token = getToken();
-      if (!token) {
-        return MOCK_VIDEOS;
-      }
+      if (!token) return MOCK_VIDEOS;
       
       const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos.json`;
       const response = await fetch(url, {
-        headers: {
-          'Authorization': `token ${token}`,
-          'Accept': 'application/vnd.github.v3+json'
-        }
+        headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
       });
       
       if (response.ok) {
         const data = await response.json();
         const content = JSON.parse(base64ToUtf8(data.content));
-        return category 
-          ? content.videos.filter(v => v.category === category)
-          : content.videos || [];
+        return category ? content.videos.filter(v => v.category === category) : content.videos || [];
       }
     } catch (e) {
       console.error('Failed to load videos:', e);
     }
-    
     return MOCK_VIDEOS;
   },
 
@@ -96,13 +113,60 @@ export const api = {
     return videos.find(v => v.id === id) || { error: "Video not found" };
   },
 
-  uploadToGitHub: async (file, metadata) => {
+  deleteVideo: async (id) => {
     const token = getToken();
-    if (!token) {
-      throw new Error('请先输入 GitHub Token');
+    if (!token || !getIsOwner()) throw new Error('无权限');
+    
+    // 获取当前视频列表
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos.json`;
+    const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+    const data = await resp.json();
+    const sha = data.sha;
+    const content = JSON.parse(base64ToUtf8(data.content));
+    
+    // 找到要删除的视频
+    const video = content.videos.find(v => v.id === id);
+    if (!video) throw new Error('视频不存在');
+    
+    // 从URL中提取文件名
+    const videoUrl = video.video_url;
+    const fileName = videoUrl.split('/').pop();
+    
+    // 删除视频文件
+    if (fileName) {
+      const fileUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos/${fileName}`;
+      try {
+        const fileResp = await fetch(fileUrl, { headers: { 'Authorization': `token ${token}` } });
+        if (fileResp.ok) {
+          const fileData = await fileResp.json();
+          await fetch(fileUrl, {
+            method: 'DELETE',
+            headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: `delete: ${fileName}`, sha: fileData.sha })
+          });
+        }
+      } catch (e) {}
     }
     
-    // 1. 上传视频文件 - 使用英文文件名
+    // 从列表中移除
+    content.videos = content.videos.filter(v => v.id !== id);
+    
+    // 更新videos.json
+    const newContent = utf8ToBase64(JSON.stringify(content, null, 2));
+    await fetch(url, {
+      method: 'PUT',
+      headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: `delete video ${id}`, content: newContent, sha })
+    });
+    
+    return { success: true };
+  },
+
+  uploadToGitHub: async (file, metadata) => {
+    const token = getToken();
+    if (!token) throw new Error('请先输入 GitHub Token');
+    if (!getIsOwner()) throw new Error('无权限上传');
+    
     const ext = file.name.split('.').pop();
     const timestamp = Date.now();
     const fileName = `video_${timestamp}.${ext}`;
@@ -110,7 +174,6 @@ export const api = {
     
     const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos/${fileName}`;
     
-    // 检查文件是否存在
     let sha = null;
     try {
       const checkResp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
@@ -120,19 +183,12 @@ export const api = {
       }
     } catch (e) {}
     
-    const body = {
-      message: `upload: ${fileName}`,
-      content: content,
-      branch: BRANCH
-    };
+    const body = { message: `upload: ${fileName}`, content, branch: BRANCH };
     if (sha) body.sha = sha;
     
     const response = await fetch(url, {
       method: 'PUT',
-      headers: {
-        'Authorization': `token ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     
@@ -144,7 +200,7 @@ export const api = {
     const result = await response.json();
     const videoUrl = result.content.download_url;
     
-    // 2. 保存视频信息到videos.json
+    // 保存到videos.json
     const videosUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos.json`;
     
     let videosList = [];
@@ -175,44 +231,72 @@ export const api = {
     videosList.push(newVideo);
     
     const videosContent = utf8ToBase64(JSON.stringify({ videos: videosList }, null, 2));
-    const videosBody = {
-      message: 'update: videos.json',
-      content: videosContent,
-      branch: BRANCH
-    };
+    const videosBody = { message: 'update: videos.json', content: videosContent, branch: BRANCH };
     if (videosSha) videosBody.sha = videosSha;
     
-    const updateResp = await fetch(videosUrl, {
+    await fetch(videosUrl, {
       method: 'PUT',
-      headers: {
-        'Authorization': `token ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(videosBody)
     });
-    
-    if (!updateResp.ok) {
-      const error = await updateResp.json();
-      console.error('Failed to update videos.json:', error);
-    }
     
     return newVideo;
   },
 
   getUser: async (id) => MOCK_USER,
 
-  getCategories: async () => MOCK_CATEGORIES
+  getCategories: async () => {
+    if (USE_MOCK) return MOCK_CATEGORIES;
+    
+    const token = getToken();
+    if (!token || !getIsOwner()) return MOCK_CATEGORIES;
+    
+    try {
+      const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/categories.json`;
+      const response = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+      if (response.ok) {
+        const data = await response.json();
+        return JSON.parse(base64ToUtf8(data.content)).categories || MOCK_CATEGORIES;
+      }
+    } catch (e) {}
+    return MOCK_CATEGORIES;
+  },
+
+  saveCategories: async (categories) => {
+    const token = getToken();
+    if (!token || !getIsOwner()) throw new Error('无权限');
+    
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/categories.json`;
+    
+    let sha = null;
+    try {
+      const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+      if (resp.ok) {
+        const data = await resp.json();
+        sha = data.sha;
+      }
+    } catch (e) {}
+    
+    const content = utf8ToBase64(JSON.stringify({ categories }, null, 2));
+    const body = { message: 'update: categories', content, branch: BRANCH };
+    if (sha) body.sha = sha;
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    
+    if (!response.ok) throw new Error('保存失败');
+    return categories;
+  }
 };
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = () => {
-      const result = reader.result;
-      const base64 = result.split(',')[1];
-      resolve(base64);
-    };
+    reader.onload = () => resolve(reader.result.split(',')[1]);
     reader.onerror = reject;
   });
 }
