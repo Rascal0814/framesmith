@@ -6,61 +6,56 @@
 
 - 🎬 视频作品画廊 - 网格展示所有作品
 - 📺 视频详情页 - 播放视频、查看描述和标签
-- 📤 作品管理 - 通过GitHub管理视频文件
+- 📤 作品管理 - 通过 GitHub 管理视频文件
 - 👤 个人主页 - 展示剪辑师个人资料和技能
+- 🔧 Gin 框架 - 高性能 Go Web 框架
 
-## 🚀 快速部署到 GitHub Pages
+## 🏗️ 技术栈
 
-### 1. 推送代码到 GitHub
+- **前端**: React + Vite + React Router
+- **后端**: Go + Gin
+- **部署**: GitHub Pages (前端) + Railway/Render (后端)
 
-```bash
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git push -u origin main
-```
-
-### 2. 启用 GitHub Pages
-
-1. 进入仓库 Settings → Pages
-2. Source 选择 "GitHub Actions"
-3. 等待自动部署完成
-
-### 3. 上传视频
-
-将你的视频文件放到 `frontend/public/videos/` 目录：
+## 📁 项目结构
 
 ```
-frontend/public/videos/
-├── demo.mp4          # 视频文件
-├── thumb-1.jpg       # 缩略图
-├── thumb-2.jpg
-└── avatar.jpg        # 用户头像
+framesmith/
+├── .github/workflows/     # GitHub Actions 自动部署
+├── backend/               # Go 后端 (Gin)
+│   ├── main.go           # 入口
+│   ├── go.mod            # 依赖
+│   ├── go.sum            # 依赖锁定
+│   └── internal/         # 内部包
+│       ├── handler/      # HTTP 处理器
+│       ├── model/        # 数据模型
+│       ├── router/       # 路由配置
+│       └── service/      # 业务逻辑
+├── frontend/             # React 前端
+│   ├── public/videos/   # 视频文件目录
+│   └── src/            # 前端代码
+└── README.md
 ```
 
-然后提交推送：
+## 🚀 快速开始
 
-```bash
-# 添加视频文件
-git add frontend/public/videos/
-git commit -m "Add sample videos"
-git push
-```
-
-GitHub Actions 会自动重新部署！
-
-## 本地开发
-
-### 1. 启动后端 (Go)
+### 后端 (Go + Gin)
 
 ```bash
 cd backend
+
+# 下载依赖
+go mod tidy
+
+# 运行
 go run main.go
+
+# 或编译运行
+go build -o server . && ./server
 ```
 
-后端运行在 http://localhost:8080
+服务运行在 http://localhost:8080
 
-### 2. 启动前端
+### 前端
 
 ```bash
 cd frontend
@@ -68,35 +63,31 @@ npm install
 npm run dev
 ```
 
-### 3. 访问
+前端运行在 http://localhost:5173
 
-- 前端: http://localhost:5173
-- 后端: http://localhost:8080
+## 📡 API 接口
 
-## 📁 项目结构
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| GET | /api/videos | 获取视频列表 |
+| GET | /api/videos/:id | 获取视频详情 |
+| POST | /api/videos | 创建视频 |
+| GET | /api/users/:id | 获取用户信息 |
+| GET | /api/categories | 获取分类列表 |
+| GET | /health | 健康检查 |
 
-```
-framesmith/
-├── .github/workflows/deploy.yml  # 自动部署配置
-├── backend/
-│   └── main.go                   # Go API 服务
-├── frontend/
-│   ├── public/videos/           # 视频文件目录
-│   └── src/                    # 前端代码
-└── README.md
-```
+## 🌐 部署
 
-## ⚙️ 工作原理
+### 前端部署到 GitHub Pages
 
-1. **视频存储**: 视频文件直接放在 `frontend/public/videos/` 目录
-2. **版本控制**: 视频文件通过 Git 进行版本管理
-3. **自动部署**: 推送到 main 分支时，GitHub Actions 自动构建并部署到 Pages
-4. **访问方式**: 视频通过静态文件方式访问，无需后端服务器
+1. 推送代码到 GitHub
+2. 在仓库设置中启用 Pages (选择 GitHub Actions)
+3. 自动部署完成后访问
 
-## 🔧 自定义
+### 后端部署
 
-- 修改 `backend/main.go` 中的演示数据
-- 修改 `frontend/src/App.jsx` 中的 UI 文字和样式
-- 在 `frontend/public/videos/` 中添加你自己的视频
+推荐使用 Railway、Render 或 Vercel 部署 Go 后端。
 
----
+## 📝 许可证
+
+MIT

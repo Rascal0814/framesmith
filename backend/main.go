@@ -1,38 +1,48 @@
+// Package main provides the API server for SampleHub
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
-	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"samplehub/config"
-	"samplehub/handlers"
+	"samplehub/internal/handler"
+	"samplehub/internal/router"
+)
+
+var (
+	version   = "v1.0.0"
+	port      = flag.Int("port", 8080, "server port")
+	enableLog = flag.Bool("log", false, "enable request logging")
 )
 
 func main() {
-	// 初始化
-	handlers.Init()
+	flag.Parse()
 
-	// 注册路由
-	mux := http.NewServeMux()
+	// Initialize handler
+	h := handler.New()
 
-	// 视频相关
-	mux.HandleFunc("/api/videos", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			handlers.GetVideos(w, r)
-		case "POST":
-			handlers.CreateVideo(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	// Create router
+	r := router.New(h)
+
+	// Server address
+	addr := fmt.Sprintf(":%d", *port)
+
+	// Start server in goroutine
+	go func() {
+		log.Printf("starting server %s on %s", version, addr)
+		if err := r.Run(addr); err != nil {
+			log.Fatalf("failed to start server: %v", err)
 		}
-	})
+	}()
 
-	mux.HandleFunc("/api/videos/", handlers.GetVideo)
-	mux.HandleFunc("/api/users/", handlers.GetUser)
-	mux.HandleFunc("/api/categories", handlers.GetCategories)
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 
-	// 启动服务器
-	fmt.Println("🚀 Backend server running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", config.CORS(mux)))
+	log.Println("shutting down server...")
 }
