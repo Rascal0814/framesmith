@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { api, setToken } from '../api'
+import { api, setToken, getToken } from '../api'
 
 function Header() {
   return (
@@ -22,7 +22,7 @@ function Header() {
 
 function Upload() {
   const navigate = useNavigate()
-  const [token, setTokenInput] = useState(() => localStorage.getItem('github_token') || '')
+  const [token, setTokenInput] = useState(() => getToken())
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -54,8 +54,17 @@ function Upload() {
     setMessage('上传中...')
 
     try {
-      const videoResult = await api.uploadToGitHub(videoFile)
-      alert('上传成功！视频已保存到 GitHub 仓库。')
+      // 上传视频并保存信息
+      const video = await api.uploadToGitHub(videoFile, {
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        tags: form.tags.split(',').map(t => t.trim()).filter(t => t),
+        duration: Math.floor(videoFile.duration / 1000) || 60,
+        thumbnail: thumbFile ? await fileToDataUrl(thumbFile) : null
+      })
+      
+      alert(`上传成功！\n标题: ${video.title}\n视频已添加到作品列表！`)
       navigate('/')
     } catch (error) {
       setMessage('上传失败: ' + error.message)
@@ -82,9 +91,6 @@ function Upload() {
                   placeholder="请输入 GitHub Token"
                   required
                 />
-                <small style={{color: '#666', fontSize: '12px'}}>
-                  Token 只保存在你的浏览器本地
-                </small>
               </div>
               <div className="form-group">
                 <label>视频文件 *</label>
@@ -93,14 +99,6 @@ function Upload() {
                   accept="video/*"
                   onChange={e => setVideoFile(e.target.files[0])}
                   required
-                />
-              </div>
-              <div className="form-group">
-                <label>缩略图 (可选)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={e => setThumbFile(e.target.files[0])}
                 />
               </div>
               <div className="form-group">
@@ -119,7 +117,7 @@ function Upload() {
                   value={form.description}
                   onChange={e => setForm({...form, description: e.target.value})}
                   placeholder="描述一下这个作品..."
-                  rows={4}
+                  rows={3}
                   required
                 />
               </div>
@@ -158,6 +156,15 @@ function Upload() {
       </main>
     </div>
   )
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+  });
 }
 
 export default Upload
