@@ -193,7 +193,7 @@ export const api = {
       id: String(videosList.length + 1),
       title: metadata.title,
       description: metadata.description,
-      thumbnail: `https://picsum.photos/seed/${timestamp}/640/360`,
+      thumbnail: metadata.thumbnail || `https://picsum.photos/seed/${timestamp}/640/360`,
       video_url: videoUrl,
       category: metadata.category,
       tags: metadata.tags || [],
