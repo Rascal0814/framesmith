@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import Header from '../components/Header'
+import { api, getIsOwner, logout, setToken, getToken } from '../api'
 import VideoCard from '../components/VideoCard'
 
 function Profile() {
