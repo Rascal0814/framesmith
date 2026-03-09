@@ -1,37 +1,67 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import Header from '../components/Header'
-import { api } from '../api'
+import { useNavigate, Link } from 'react-router-dom'
+import { api, setToken } from '../api'
+
+function Header() {
+  return (
+    <header className="header">
+      <div className="header-content">
+        <Link to="/" className="logo">
+          <span className="logo-icon">🎬</span>
+          <span className="logo-text">SampleHub</span>
+        </Link>
+        <nav className="nav">
+          <Link to="/">首页</Link>
+          <Link to="/upload">上传作品</Link>
+          <Link to="/profile/1">我的主页</Link>
+        </nav>
+      </div>
+    </header>
+  )
+}
 
 function Upload() {
   const navigate = useNavigate()
+  const [token, setTokenInput] = useState(() => localStorage.getItem('github_token') || '')
   const [form, setForm] = useState({
     title: '',
     description: '',
     category: '',
     tags: '',
-    video_url: ''
   })
-  const [submitting, setSubmitting] = useState(false)
+  const [videoFile, setVideoFile] = useState(null)
+  const [thumbFile, setThumbFile] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  const [message, setMessage] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setSubmitting(true)
-
-    try {
-      await api.createVideo({
-        ...form,
-        tags: form.tags.split(',').map(t => t.trim()).filter(t => t),
-        duration: Math.floor(Math.random() * 300) + 60,
-        user_id: '1'
-      })
-      alert('作品上传成功！')
-      navigate('/')
-    } catch (e) {
-      alert('上传失败，请重试')
+    
+    if (!token) {
+      setMessage('请输入 GitHub Token')
+      return
     }
     
-    setSubmitting(false)
+    if (!videoFile) {
+      setMessage('请选择视频文件')
+      return
+    }
+    
+    setToken(token)
+    localStorage.setItem('github_token', token)
+    
+    setUploading(true)
+    setMessage('上传中...')
+
+    try {
+      const videoResult = await api.uploadToGitHub(videoFile)
+      alert('上传成功！视频已保存到 GitHub 仓库。')
+      navigate('/')
+    } catch (error) {
+      setMessage('上传失败: ' + error.message)
+    }
+    
+    setUploading(false)
   }
 
   return (
@@ -41,8 +71,38 @@ function Upload() {
         <div className="upload-page">
           <div className="upload-container">
             <h1>上传作品</h1>
-            
+            {message && <div className="message">{message}</div>}
             <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label>GitHub Token *</label>
+                <input
+                  type="password"
+                  value={token}
+                  onChange={e => setTokenInput(e.target.value)}
+                  placeholder="请输入 GitHub Token"
+                  required
+                />
+                <small style={{color: '#666', fontSize: '12px'}}>
+                  Token 只保存在你的浏览器本地
+                </small>
+              </div>
+              <div className="form-group">
+                <label>视频文件 *</label>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={e => setVideoFile(e.target.files[0])}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>缩略图 (可选)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setThumbFile(e.target.files[0])}
+                />
+              </div>
               <div className="form-group">
                 <label>作品标题 *</label>
                 <input
@@ -53,7 +113,6 @@ function Upload() {
                   required
                 />
               </div>
-
               <div className="form-group">
                 <label>作品描述 *</label>
                 <textarea
@@ -64,7 +123,6 @@ function Upload() {
                   required
                 />
               </div>
-
               <div className="form-group">
                 <label>分类 *</label>
                 <select
@@ -82,29 +140,17 @@ function Upload() {
                   <option value="纪录片">纪录片</option>
                 </select>
               </div>
-
               <div className="form-group">
                 <label>标签</label>
                 <input
                   type="text"
                   value={form.tags}
                   onChange={e => setForm({...form, tags: e.target.value})}
-                  placeholder="用逗号分隔标签，如：汽车, 科技, 广告"
+                  placeholder="用逗号分隔标签"
                 />
               </div>
-
-              <div className="form-group">
-                <label>视频链接</label>
-                <input
-                  type="url"
-                  value={form.video_url}
-                  onChange={e => setForm({...form, video_url: e.target.value})}
-                  placeholder="输入视频URL（演示用）"
-                />
-              </div>
-
-              <button type="submit" className="submit-btn" disabled={submitting}>
-                {submitting ? '上传中...' : '发布作品'}
+              <button type="submit" className="submit-btn" disabled={uploading}>
+                {uploading ? '上传中...' : '上传到GitHub'}
               </button>
             </form>
           </div>

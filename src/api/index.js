@@ -3,7 +3,7 @@ const MOCK_VIDEOS = [
     id: "1",
     title: "特斯拉自动驾驶宣传片",
     description: "为特斯拉中国区制作的自动驾驶功能展示视频，包含城市道路和高速场景",
-    thumbnail: "https://picsum.photos/seed/vid1.jpg",
+    thumbnail: "https://picsum.photos/seed/vid1/640/360",
     video_url: "https://www.w3schools.com/html/mov_bbb.mp4",
     category: "广告宣传",
     tags: ["汽车", "自动驾驶", "科技"],
@@ -16,7 +16,7 @@ const MOCK_VIDEOS = [
     id: "2",
     title: "Nike跑步产品短片",
     description: "Nike Flyknit系列跑鞋广告，展现运动激情与产品性能",
-    thumbnail: "https://picsum.photos/seed/vid2.jpg",
+    thumbnail: "https://picsum.photos/seed/vid2/640/360",
     video_url: "https://www.w3schools.com/html/mov_bbb.mp4",
     category: "广告宣传",
     tags: ["运动", "Nike", "跑步"],
@@ -29,7 +29,7 @@ const MOCK_VIDEOS = [
     id: "3",
     title: "vivo X100产品视频",
     description: "vivo X100智能手机发布会开场视频，展示夜景拍摄功能",
-    thumbnail: "https://picsum.photos/seed/vid3.jpg",
+    thumbnail: "https://picsum.photos/seed/vid3/640/360",
     video_url: "https://www.w3schools.com/html/mov_bbb.mp4",
     category: "产品展示",
     tags: ["手机", "摄影", "夜景"],
@@ -43,7 +43,7 @@ const MOCK_VIDEOS = [
 const MOCK_USER = {
   id: "1",
   name: "张伟",
-  avatar: "https://picsum.photos/seed/avatar.jpg",
+  avatar: "https://picsum.photos/seed/user1/200/200",
   bio: "资深视频剪辑师，8年从业经验，擅长广告、宣传片、短视频制作。曾服务于特斯拉、Nike、vivo等知名品牌。",
   skills: ["Premiere", "After Effects", "Final Cut Pro", "DaVinci Resolve", "C4D"],
   video_count: 3,
@@ -51,8 +51,19 @@ const MOCK_USER = {
 
 const MOCK_CATEGORIES = ["广告宣传", "产品展示", "游戏", "文化", "金融", "短视频", "纪录片"];
 
-// 生产环境使用mock数据（静态部署），开发环境使用后端API
+// 生产环境使用mock数据
 const USE_MOCK = true;
+
+const REPO_OWNER = 'Rascal0814';
+const REPO_NAME = 'framesmith';
+const BRANCH = 'main';
+
+let githubToken = '';
+
+// 设置 Token（上传前调用）
+export const setToken = (token) => {
+  githubToken = token;
+};
 
 export const api = {
   getVideos: async (category = '') => {
@@ -61,10 +72,7 @@ export const api = {
         ? MOCK_VIDEOS.filter(v => v.category === category)
         : MOCK_VIDEOS;
     }
-    const url = category 
-      ? `${API_BASE}/videos?category=${encodeURIComponent(category)}`
-      : `${API_BASE}/videos`;
-    const res = await fetch(url);
+    const res = await fetch(`/api/videos`);
     return res.json();
   },
 
@@ -72,27 +80,60 @@ export const api = {
     if (USE_MOCK) {
       return MOCK_VIDEOS.find(v => v.id === id) || { error: "Video not found" };
     }
-    const res = await fetch(`${API_BASE}/videos/${id}`);
+    const res = await fetch(`/api/videos/${id}`);
     return res.json();
   },
 
-  createVideo: async (data) => {
-    if (USE_MOCK) {
-      return { ...data, id: String(MOCK_VIDEOS.length + 1) };
+  uploadToGitHub: async (file, onProgress) => {
+    if (!githubToken) {
+      throw new Error('请先输入 GitHub Token');
     }
-    const res = await fetch(`${API_BASE}/videos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+    
+    const fileName = file.name;
+    const content = await fileToBase64(file);
+    
+    // 先检查文件是否已存在
+    const existingFile = await checkFileExists(fileName);
+    
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos/${fileName}`;
+    
+    const body = {
+      message: `upload: ${fileName}`,
+      content: content,
+      branch: BRANCH
+    };
+    
+    if (existingFile) {
+      body.sha = existingFile.sha;
+    }
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body)
     });
-    return res.json();
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || '上传失败');
+    }
+    
+    const result = await response.json();
+    return {
+      name: fileName,
+      url: result.content.download_url,
+      path: result.content.path
+    };
   },
 
   getUser: async (id) => {
     if (USE_MOCK) {
       return MOCK_USER;
     }
-    const res = await fetch(`${API_BASE}/users/${id}`);
+    const res = await fetch(`/api/users/${id}`);
     return res.json();
   },
 
@@ -100,7 +141,37 @@ export const api = {
     if (USE_MOCK) {
       return MOCK_CATEGORIES;
     }
-    const res = await fetch(`${API_BASE}/categories`);
+    const res = await fetch(`/api/categories`);
     return res.json();
   }
 };
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result;
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+  });
+}
+
+async function checkFileExists(fileName) {
+  try {
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos/${fileName}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `token ${githubToken}`,
+      }
+    });
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (e) {
+    // 文件不存在
+  }
+  return null;
+}
