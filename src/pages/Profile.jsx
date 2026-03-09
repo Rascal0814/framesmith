@@ -177,7 +177,6 @@ function Profile() {
                   required 
                   style={{marginBottom: "15px", width: "100%"}} 
                 />
-                <input type="file" accept="image/*" onChange={e => setThumbFile(e.target.files[0])} style={{marginBottom: "15px", width: "100%"}} />
                 <input type="text" placeholder="标题" value={uploadForm.title} onChange={e => setUploadForm({...uploadForm, title: e.target.value})} required style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}} />
                 <textarea placeholder="描述" value={uploadForm.description} onChange={e => setUploadForm({...uploadForm, description: e.target.value})} required rows={2} style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}} />
                 <select value={uploadForm.category} onChange={e => setUploadForm({...uploadForm, category: e.target.value})} required style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}}>
