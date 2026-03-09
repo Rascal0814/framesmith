@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import Header from '../components/Header'
 import VideoCard from '../components/VideoCard'
-import { api, getIsOwner, logout, setToken, getToken } from '../api'
+import { api, getIsOwner, logout, setToken, getToken, uploadThumb } from '../api'
 
 function Profile() {
   const { id } = useParams()
@@ -21,6 +21,7 @@ function Profile() {
     tags: '',
   })
   const [videoFile, setVideoFile] = useState(null)
+  const [thumbFile, setThumbFile] = useState(null)
   const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
@@ -81,7 +82,8 @@ function Profile() {
         description: uploadForm.description,
         category: uploadForm.category,
         tags: uploadForm.tags.split(',').map(t => t.trim()).filter(t => t),
-        duration: Math.floor(videoFile.duration / 1000) || 60
+        duration: Math.floor(videoFile.duration / 1000) || 60,
+        thumbnail: thumbFile ? await uploadThumb(thumbFile) : null
       })
       alert('上传成功！')
       setShowUpload(false)
@@ -149,7 +151,8 @@ function Profile() {
             </button>
             {showUpload && (
               <form onSubmit={handleUpload}>
-                <input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files[0])} required style={{marginBottom: '10px', width: '100%'}} />
+                <input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files[0])} required style={{marginBottom: "10px", width: "100%"}} />
+                <input type="file" accept="image/*" onChange={e => setThumbFile(e.target.files[0])} style={{marginBottom: "10px", width: "100%"}} placeholder="可选缩略图" />
                 <input type="text" placeholder="标题" value={uploadForm.title} onChange={e => setUploadForm({...uploadForm, title: e.target.value})} required style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}} />
                 <textarea placeholder="描述" value={uploadForm.description} onChange={e => setUploadForm({...uploadForm, description: e.target.value})} required rows={2} style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}} />
                 <select value={uploadForm.category} onChange={e => setUploadForm({...uploadForm, category: e.target.value})} required style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}}>

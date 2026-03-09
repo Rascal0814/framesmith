@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 function VideoCard({ video }) {
   const videoRef = useRef(null)
   const [duration, setDuration] = useState(video.duration || 0)
+  const [showVideo, setShowVideo] = useState(false)
   
   const formatDuration = (seconds) => {
     if (!seconds) return '0:00'
@@ -17,18 +18,36 @@ function VideoCard({ video }) {
     return views
   }
 
+  const hasThumbnail = video.thumbnail && video.thumbnail.startsWith('http')
+
   return (
     <Link to={`/video/${video.id}`} className="video-card">
-      <div className="video-thumbnail">
-        <video 
-          ref={videoRef}
-          src={video.video_url} 
-          muted 
-          playsInline 
-          onLoadedMetadata={e => {
-            setDuration(Math.round(e.target.duration))
-          }}
-        />
+      <div 
+        className="video-thumbnail"
+        onMouseEnter={() => setShowVideo(true)}
+        onMouseLeave={() => setShowVideo(false)}
+      >
+        {hasThumbnail ? (
+          <>
+            <img src={video.thumbnail} alt={video.title} style={{display: showVideo ? 'none' : 'block'}} />
+            <video 
+              ref={videoRef}
+              src={video.video_url} 
+              muted 
+              playsInline 
+              style={{display: showVideo ? 'block' : 'none'}}
+              onLoadedMetadata={e => setDuration(Math.round(e.target.duration))}
+            />
+          </>
+        ) : (
+          <video 
+            ref={videoRef}
+            src={video.video_url} 
+            muted 
+            playsInline 
+            onLoadedMetadata={e => setDuration(Math.round(e.target.duration))}
+          />
+        )}
         {duration > 0 && <span className="duration">{formatDuration(duration)}</span>}
       </div>
       <div className="video-info">
