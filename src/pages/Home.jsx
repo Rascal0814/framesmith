@@ -30,8 +30,8 @@ function Home() {
       <Header />
       <main className="main-content">
         <div className="hero">
-          <h1>展示你的剪辑作品</h1>
-          <p>专业的视频作品展示平台，让你的才华被更多人看见</p>
+          <h1>剪辑师作品集</h1>
+          <p>展示我的视频作品集，记录每一个精彩瞬间</p>
         </div>
 
         <div className="category-filter">

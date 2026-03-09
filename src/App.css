@@ -177,14 +177,14 @@ a {
   overflow: hidden;
 }
 
-.video-thumbnail img {
+.video-thumbnail video, .video-thumbnail img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s;
 }
 
-.video-card:hover .video-thumbnail img {
+.video-card:hover .video-thumbnail video, .video-thumbnail img {
   transform: scale(1.05);
 }
 
@@ -537,4 +537,19 @@ a {
   .skills {
     justify-content: center;
   }
+}
+
+.video-thumbnail video {
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-card:hover .video-thumbnail video {
+  display: block;
+}
+
+.video-card:hover .video-thumbnail img {
+  display: none;
 }
