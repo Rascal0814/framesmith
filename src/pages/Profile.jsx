@@ -49,6 +49,7 @@ function Profile() {
       setIsOwner(owner)
       if (owner) {
         setMessage('验证成功！')
+        window.location.reload()
       } else {
         setMessage('Token 有效但你不是所有者')
       }
