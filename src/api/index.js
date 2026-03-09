@@ -33,11 +33,26 @@ const BRANCH = 'main';
 let githubToken = '';
 let isOwner = false;
 
+function utf8ToBase64(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+function base64ToUtf8(str) {
+  return decodeURIComponent(escape(atob(str)));
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+  });
+}
+
 export const setToken = async (token) => {
   githubToken = token;
   localStorage.setItem('github_token', token);
-  
-  // 验证token并检查是否是owner
   try {
     const response = await fetch('https://api.github.com/user', {
       headers: { 'Authorization': `token ${token}` }
@@ -74,29 +89,18 @@ export const logout = () => {
   localStorage.removeItem('is_owner');
 };
 
-function utf8ToBase64(str) {
-  return btoa(unescape(encodeURIComponent(str)));
-}
-
-function base64ToUtf8(str) {
-  return decodeURIComponent(escape(atob(str)));
-}
-
 export const api = {
   getVideos: async (category = '') => {
     if (USE_MOCK) {
       return category ? MOCK_VIDEOS.filter(v => v.category === category) : MOCK_VIDEOS;
     }
-    
     try {
       const token = getToken();
       if (!token) return MOCK_VIDEOS;
-      
       const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos.json`;
       const response = await fetch(url, {
         headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
       });
-      
       if (response.ok) {
         const data = await response.json();
         const content = JSON.parse(base64ToUtf8(data.content));
@@ -116,23 +120,14 @@ export const api = {
   deleteVideo: async (id) => {
     const token = getToken();
     if (!token || !getIsOwner()) throw new Error('无权限');
-    
-    // 获取当前视频列表
     const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos.json`;
     const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
     const data = await resp.json();
     const sha = data.sha;
     const content = JSON.parse(base64ToUtf8(data.content));
-    
-    // 找到要删除的视频
     const video = content.videos.find(v => v.id === id);
     if (!video) throw new Error('视频不存在');
-    
-    // 从URL中提取文件名
-    const videoUrl = video.video_url;
-    const fileName = videoUrl.split('/').pop();
-    
-    // 删除视频文件
+    const fileName = video.video_url.split('/').pop();
     if (fileName) {
       const fileUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos/${fileName}`;
       try {
@@ -147,18 +142,13 @@ export const api = {
         }
       } catch (e) {}
     }
-    
-    // 从列表中移除
     content.videos = content.videos.filter(v => v.id !== id);
-    
-    // 更新videos.json
     const newContent = utf8ToBase64(JSON.stringify(content, null, 2));
     await fetch(url, {
       method: 'PUT',
       headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: `delete video ${id}`, content: newContent, sha })
     });
-    
     return { success: true };
   },
 
@@ -166,14 +156,11 @@ export const api = {
     const token = getToken();
     if (!token) throw new Error('请先输入 GitHub Token');
     if (!getIsOwner()) throw new Error('无权限上传');
-    
     const ext = file.name.split('.').pop();
     const timestamp = Date.now();
     const fileName = `video_${timestamp}.${ext}`;
     const content = await fileToBase64(file);
-    
     const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos/${fileName}`;
-    
     let sha = null;
     try {
       const checkResp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
@@ -182,27 +169,20 @@ export const api = {
         sha = existing.sha;
       }
     } catch (e) {}
-    
     const body = { message: `upload: ${fileName}`, content, branch: BRANCH };
     if (sha) body.sha = sha;
-    
     const response = await fetch(url, {
       method: 'PUT',
       headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || '视频上传失败');
     }
-    
     const result = await response.json();
     const videoUrl = result.content.download_url;
-    
-    // 保存到videos.json
     const videosUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos.json`;
-    
     let videosList = [];
     let videosSha = null;
     try {
@@ -213,7 +193,6 @@ export const api = {
         videosList = JSON.parse(base64ToUtf8(listData.content)).videos || [];
       }
     } catch (e) {}
-    
     const newVideo = {
       id: String(videosList.length + 1),
       title: metadata.title,
@@ -227,19 +206,15 @@ export const api = {
       created_at: new Date().toISOString().split('T')[0],
       user_id: "1"
     };
-    
     videosList.push(newVideo);
-    
     const videosContent = utf8ToBase64(JSON.stringify({ videos: videosList }, null, 2));
     const videosBody = { message: 'update: videos.json', content: videosContent, branch: BRANCH };
     if (videosSha) videosBody.sha = videosSha;
-    
     await fetch(videosUrl, {
       method: 'PUT',
       headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(videosBody)
     });
-    
     return newVideo;
   },
 
@@ -292,12 +267,9 @@ export const api = {
     const data = await resp.json();
     const sha = data.sha;
     const content = JSON.parse(base64ToUtf8(data.content));
-    
     const videoIndex = content.videos.findIndex(v => v.id === id);
     if (videoIndex === -1) throw new Error('视频不存在');
-    
     content.videos[videoIndex] = { ...content.videos[videoIndex], ...updates };
-    
     const newContent = utf8ToBase64(JSON.stringify(content, null, 2));
     await fetch(url, {
       method: 'PUT',
@@ -305,13 +277,5 @@ export const api = {
       body: JSON.stringify({ message: `update video ${id}`, content: newContent, sha })
     });
     return content.videos[videoIndex];
-  },
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-  });
-}
+  }
+};
