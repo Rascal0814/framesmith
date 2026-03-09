@@ -96,10 +96,10 @@ export const api = {
     }
     try {
       const token = getToken();
-      if (!token) return MOCK_VIDEOS;
+      // 公开内容不需要token也能读取
       const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos.json`;
       const response = await fetch(url, {
-        headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+        headers: token ? { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' } : { 'Accept': 'application/vnd.github.v3+json' }
       });
       if (response.ok) {
         const data = await response.json();
@@ -222,11 +222,10 @@ export const api = {
 
   getCategories: async () => {
     if (USE_MOCK) return MOCK_CATEGORIES;
-    const token = getToken();
-    if (!token || !getIsOwner()) return MOCK_CATEGORIES;
     try {
+      const token = getToken();
       const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/categories.json`;
-      const response = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+      const response = await fetch(url, { headers: token ? { 'Authorization': `token ${token}` } : {} });
       if (response.ok) {
         const data = await response.json();
         return JSON.parse(base64ToUtf8(data.content)).categories || MOCK_CATEGORIES;
