@@ -6,56 +6,48 @@
 
 - 🎬 视频作品画廊 - 网格展示所有作品
 - 📺 视频详情页 - 播放视频、查看描述和标签
-- 📤 作品管理 - 通过 GitHub 管理视频文件
+- 📤 作品管理 - 直接在 GitHub 仓库添加视频文件
 - 👤 个人主页 - 展示剪辑师个人资料和技能
-- 🔧 Gin 框架 - 高性能 Go Web 框架
 
-## 🏗️ 技术栈
+## 🚀 快速部署到 GitHub Pages
 
-- **前端**: React + Vite + React Router
-- **后端**: Go + Gin
-- **部署**: GitHub Pages (前端) + Railway/Render (后端)
+1. 推送代码到 GitHub
+2. 在仓库设置中启用 Pages (选择 GitHub Actions)
+3. 自动部署完成后访问
 
-## 📁 项目结构
+## 📤 添加新视频
+
+把视频文件放到 `frontend/public/videos/` 目录：
 
 ```
-framesmith/
-├── .github/workflows/     # GitHub Actions 自动部署
-├── backend/               # Go 后端 (Gin)
-│   ├── main.go           # 入口
-│   ├── go.mod            # 依赖
-│   ├── go.sum            # 依赖锁定
-│   └── internal/         # 内部包
-│       ├── handler/      # HTTP 处理器
-│       ├── model/        # 数据模型
-│       ├── router/       # 路由配置
-│       └── service/      # 业务逻辑
-├── frontend/             # React 前端
-│   ├── public/videos/   # 视频文件目录
-│   └── src/            # 前端代码
-└── README.md
+frontend/public/videos/
+├── demo.mp4          # 视频文件
+├── thumb-1.jpg       # 缩略图
+├── thumb-2.jpg
+└── avatar.jpg        # 用户头像
 ```
 
-## 🚀 快速开始
+然后修改 `frontend/src/api/index.js` 中的 `MOCK_VIDEOS` 数组，添加视频信息：
 
-### 后端 (Go + Gin)
-
-```bash
-cd backend
-
-# 下载依赖
-go mod tidy
-
-# 运行
-go run main.go
-
-# 或编译运行
-go build -o server . && ./server
+```javascript
+{
+  id: "4",
+  title: "新作品",
+  description: "描述",
+  thumbnail: "/videos/thumb-4.jpg",
+  video_url: "/videos/demo.mp4",
+  category: "广告宣传",
+  tags: ["标签1", "标签2"],
+  duration: 120,
+  views: 0,
+  created_at: "2026-03-09",
+  user_id: "1",
+}
 ```
 
-服务运行在 http://localhost:8080
+提交推送后自动部署！
 
-### 前端
+## 本地开发
 
 ```bash
 cd frontend
@@ -63,31 +55,24 @@ npm install
 npm run dev
 ```
 
-前端运行在 http://localhost:5173
+## 📁 项目结构
 
-## 📡 API 接口
+```
+framesmith/
+├── .github/workflows/     # GitHub Actions 自动部署
+├── frontend/              # React 前端
+│   ├── public/videos/   # 视频文件目录
+│   └── src/            # 前端代码
+└── README.md
+```
 
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| GET | /api/videos | 获取视频列表 |
-| GET | /api/videos/:id | 获取视频详情 |
-| POST | /api/videos | 创建视频 |
-| GET | /api/users/:id | 获取用户信息 |
-| GET | /api/categories | 获取分类列表 |
-| GET | /health | 健康检查 |
+## 🔧 技术栈
 
-## 🌐 部署
+- React + Vite + React Router
+- 纯静态部署，无需后端服务器
 
-### 前端部署到 GitHub Pages
+## ⚙️ 自动部署
 
-1. 推送代码到 GitHub
-2. 在仓库设置中启用 Pages (选择 GitHub Actions)
-3. 自动部署完成后访问
+每次推送到 main 分支，GitHub Actions 会自动构建并部署到 Pages。
 
-### 后端部署
-
-推荐使用 Railway、Render 或 Vercel 部署 Go 后端。
-
-## 📝 许可证
-
-MIT
+---
