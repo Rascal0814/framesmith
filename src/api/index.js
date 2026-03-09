@@ -247,10 +247,8 @@ export const api = {
 
   getCategories: async () => {
     if (USE_MOCK) return MOCK_CATEGORIES;
-    
     const token = getToken();
     if (!token || !getIsOwner()) return MOCK_CATEGORIES;
-    
     try {
       const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/categories.json`;
       const response = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
@@ -265,9 +263,7 @@ export const api = {
   saveCategories: async (categories) => {
     const token = getToken();
     if (!token || !getIsOwner()) throw new Error('无权限');
-    
     const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/categories.json`;
-    
     let sha = null;
     try {
       const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
@@ -276,21 +272,40 @@ export const api = {
         sha = data.sha;
       }
     } catch (e) {}
-    
     const content = utf8ToBase64(JSON.stringify({ categories }, null, 2));
     const body = { message: 'update: categories', content, branch: BRANCH };
     if (sha) body.sha = sha;
-    
     const response = await fetch(url, {
       method: 'PUT',
       headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    
     if (!response.ok) throw new Error('保存失败');
     return categories;
-  }
-};
+  },
+
+  updateVideo: async (id, updates) => {
+    const token = getToken();
+    if (!token || !getIsOwner()) throw new Error('无权限');
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos.json`;
+    const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+    const data = await resp.json();
+    const sha = data.sha;
+    const content = JSON.parse(base64ToUtf8(data.content));
+    
+    const videoIndex = content.videos.findIndex(v => v.id === id);
+    if (videoIndex === -1) throw new Error('视频不存在');
+    
+    content.videos[videoIndex] = { ...content.videos[videoIndex], ...updates };
+    
+    const newContent = utf8ToBase64(JSON.stringify(content, null, 2));
+    await fetch(url, {
+      method: 'PUT',
+      headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: `update video ${id}`, content: newContent, sha })
+    });
+    return content.videos[videoIndex];
+  },
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
