@@ -17,15 +17,12 @@ function VideoCard({ video }) {
       <div className="video-thumbnail">
         <video 
           src={video.video_url}
+          poster={video.thumbnail}
           muted
           playsInline
-          onMouseOver={e => e.target.play()}
-          onMouseOut={e => { e.target.pause(); e.target.currentTime = 0; }}
+          preload="metadata"
         />
         <span className="duration">{formatDuration(video.duration)}</span>
-        <div className="play-overlay">
-          <span className="play-icon">▶</span>
-        </div>
       </div>
       <div className="video-info">
         <h3>{video.title}</h3>
