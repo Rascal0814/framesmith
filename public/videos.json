@@ -15,6 +15,21 @@
       "views": 0,
       "created_at": "2026-03-09",
       "user_id": "1"
+    },
+    {
+      "id": "2",
+      "title": "端午节介绍",
+      "description": "动画",
+      "thumbnail": "https://picsum.photos/seed/1773045878114/640/360",
+      "video_url": "https://raw.githubusercontent.com/Rascal0814/framesmith/main/public/videos/video_1773045878114.mp4",
+      "category": "动画",
+      "tags": [
+        "动画"
+      ],
+      "duration": 60,
+      "views": 0,
+      "created_at": "2026-03-09",
+      "user_id": "1"
     }
   ]
 }
