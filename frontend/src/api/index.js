@@ -51,8 +51,8 @@ const MOCK_USER = {
 
 const MOCK_CATEGORIES = ["广告宣传", "产品展示", "游戏", "文化", "金融", "短视频", "纪录片"];
 
-const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:8080/api';
-const USE_MOCK = !API_BASE;
+const API_BASE = 'http://43.143.80.123:8080/api';
+const USE_MOCK = false;
 
 export const api = {
   getVideos: async (category = '') => {
