@@ -275,3 +275,41 @@ export const api = {
   }
 };
 
+
+export const uploadThumb = async (file) => {
+  const token = getToken();
+  if (!token) throw new Error('请先输入 GitHub Token');
+  
+  const ext = file.name.split('.').pop();
+  const timestamp = Date.now();
+  const fileName = `thumb_${timestamp}.${ext}`;
+  const content = await fileToBase64(file);
+  
+  const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos/${fileName}`;
+  
+  let sha = null;
+  try {
+    const checkResp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+    if (checkResp.ok) {
+      const existing = await checkResp.json();
+      sha = existing.sha;
+    }
+  } catch (e) {}
+  
+  const body = { message: `upload: ${fileName}`, content, branch: BRANCH };
+  if (sha) body.sha = sha;
+  
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || '缩略图上传失败');
+  }
+  
+  const result = await response.json();
+  return result.content.download_url;
+};

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import Header from '../components/Header'
-import { api, getIsOwner, logout, setToken, getToken } from '../api'
+import { api, getIsOwner, logout, setToken, getToken, uploadThumb } from '../api'
 import VideoCard from '../components/VideoCard'
 
 function Profile() {
@@ -22,6 +22,7 @@ function Profile() {
     thumbnail: '',
   })
   const [videoFile, setVideoFile] = useState(null)
+  const [thumbFile, setThumbFile] = useState(null)
   const [videoDuration, setVideoDuration] = useState(0)
   const [uploading, setUploading] = useState(false)
 
@@ -78,18 +79,24 @@ function Profile() {
     }
     setUploading(true)
     try {
+      let thumbnailUrl = uploadForm.thumbnail || null
+      if (thumbFile) {
+        thumbnailUrl = await uploadThumb(thumbFile)
+      }
       await api.uploadToGitHub(videoFile, {
         title: uploadForm.title,
         description: uploadForm.description,
         category: uploadForm.category,
         tags: uploadForm.tags.split(',').map(t => t.trim()).filter(t => t),
-        thumbnail: uploadForm.thumbnail || null,
+        thumbnail: thumbnailUrl,
         duration: videoDuration || 60,
       })
       alert('上传成功！')
       setShowUpload(false)
       setUploadForm({ title: '', description: '', category: '', tags: '', thumbnail: '' })
       setVideoDuration(0)
+      setVideoFile(null)
+      setThumbFile(null)
       fetchData()
     } catch (e) {
       setMessage('上传失败: ' + e.message)
@@ -179,6 +186,8 @@ function Profile() {
                 </select>
                 <input type="text" placeholder="标签（逗号分隔）" value={uploadForm.tags} onChange={e => setUploadForm({...uploadForm, tags: e.target.value})} style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}} />
                 <input type="text" placeholder="缩略图URL（可选）" value={uploadForm.thumbnail} onChange={e => setUploadForm({...uploadForm, thumbnail: e.target.value})} style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}} />
+                <label style={{display: "block", marginBottom: "5px", color: "#888"}}>或上传缩略图文件</label>
+                <input type="file" accept="image/*" onChange={e => setThumbFile(e.target.files[0])} style={{marginBottom: "15px", width: "100%"}} />
                 <button type="submit" disabled={uploading} style={{width: '100%', padding: '12px', background: 'var(--accent)', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer'}}>{uploading ? '上传中...' : '发布'}</button>
               </form>
             )}
