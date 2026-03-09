@@ -15,7 +15,12 @@ function VideoCard({ video }) {
   return (
     <Link to={`/video/${video.id}`} className="video-card">
       <div className="video-thumbnail">
-        <img src={video.thumbnail} alt={video.title} />
+        <video 
+          src={video.video_url} 
+          poster={video.thumbnail}
+          muted 
+          playsInline 
+        />
         <span className="duration">{formatDuration(video.duration)}</span>
       </div>
       <div className="video-info">
