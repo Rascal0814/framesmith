@@ -116,7 +116,7 @@ export const api = {
   deleteVideo: async (id) => {
     const token = getToken();
     if (!token || !getIsOwner()) throw new Error('无权限');
-    const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/public/videos.json`;
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/videos.json`;
     const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
     const data = await resp.json();
     const sha = data.sha;
