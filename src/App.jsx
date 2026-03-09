@@ -7,7 +7,7 @@ import './App.css'
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/framesmith/">
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/video/:id" element={<VideoDetail />} />
