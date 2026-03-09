@@ -16,10 +16,11 @@ function VideoCard({ video }) {
     <Link to={`/video/${video.id}`} className="video-card">
       <div className="video-thumbnail">
         <video 
-          src={video.video_url} 
-          muted 
+          src={video.video_url}
+          muted
+          playsInline
           onMouseOver={e => e.target.play()}
-          onMouseOut={e => { e.target.pause(); e.target.currentTime = 0; }
+          onMouseOut={e => { e.target.pause(); e.target.currentTime = 0; }}
         />
         <span className="duration">{formatDuration(video.duration)}</span>
         <div className="play-overlay">
