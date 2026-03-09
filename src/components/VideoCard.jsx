@@ -1,10 +1,6 @@
 import { Link } from 'react-router-dom'
-import { useRef, useState } from 'react'
 
 function VideoCard({ video }) {
-  const videoRef = useRef(null)
-  const [duration, setDuration] = useState(video.duration || 0)
-  
   const formatDuration = (seconds) => {
     if (!seconds) return '0:00'
     const mins = Math.floor(seconds / 60)
@@ -23,15 +19,9 @@ function VideoCard({ video }) {
         {video.thumbnail ? (
           <img src={video.thumbnail} alt={video.title} />
         ) : (
-          <video 
-            ref={videoRef}
-            src={video.video_url} 
-            muted 
-            playsInline 
-            onLoadedMetadata={e => setDuration(Math.round(e.target.duration))}
-          />
+          <video src={video.video_url} muted playsInline />
         )}
-        {duration > 0 && <span className="duration">{formatDuration(duration)}</span>}
+        {video.duration > 0 && <span className="duration">{formatDuration(video.duration)}</span>}
       </div>
       <div className="video-info">
         <h3>{video.title}</h3>
