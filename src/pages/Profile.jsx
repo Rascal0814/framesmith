@@ -19,6 +19,7 @@ function Profile() {
     description: '',
     category: '',
     tags: '',
+    thumbnail: '',
   })
   const [videoFile, setVideoFile] = useState(null)
   const [videoDuration, setVideoDuration] = useState(0)
@@ -82,11 +83,12 @@ function Profile() {
         description: uploadForm.description,
         category: uploadForm.category,
         tags: uploadForm.tags.split(',').map(t => t.trim()).filter(t => t),
+        thumbnail: uploadForm.thumbnail || null,
         duration: videoDuration || 60,
       })
       alert('上传成功！')
       setShowUpload(false)
-      setUploadForm({ title: '', description: '', category: '', tags: '' })
+      setUploadForm({ title: '', description: '', category: '', tags: '', thumbnail: '' })
       setVideoDuration(0)
       fetchData()
     } catch (e) {
@@ -176,6 +178,7 @@ function Profile() {
                   {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                 </select>
                 <input type="text" placeholder="标签（逗号分隔）" value={uploadForm.tags} onChange={e => setUploadForm({...uploadForm, tags: e.target.value})} style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}} />
+                <input type="text" placeholder="缩略图URL（可选）" value={uploadForm.thumbnail} onChange={e => setUploadForm({...uploadForm, thumbnail: e.target.value})} style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}} />
                 <button type="submit" disabled={uploading} style={{width: '100%', padding: '12px', background: 'var(--accent)', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer'}}>{uploading ? '上传中...' : '发布'}</button>
               </form>
             )}
