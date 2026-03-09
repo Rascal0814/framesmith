@@ -45,6 +45,21 @@
       "views": 0,
       "created_at": "2026-03-09",
       "user_id": "1"
+    },
+    {
+      "id": "4",
+      "title": "测试时长",
+      "description": "1",
+      "thumbnail": "https://raw.githubusercontent.com/Rascal0814/framesmith/main/public/videos/thumb_1773049304352.JPG",
+      "video_url": "https://raw.githubusercontent.com/Rascal0814/framesmith/main/public/videos/video_1773049307092.mp4",
+      "category": "文化",
+      "tags": [
+        "测试"
+      ],
+      "duration": 101,
+      "views": 0,
+      "created_at": "2026-03-09",
+      "user_id": "1"
     }
   ]
 }
