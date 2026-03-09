@@ -21,6 +21,7 @@ function Profile() {
     tags: '',
   })
   const [videoFile, setVideoFile] = useState(null)
+  const [videoDuration, setVideoDuration] = useState(0)
   const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
@@ -81,11 +82,12 @@ function Profile() {
         description: uploadForm.description,
         category: uploadForm.category,
         tags: uploadForm.tags.split(',').map(t => t.trim()).filter(t => t),
-        duration: Math.floor(videoFile.duration / 1000) || 60,
+        duration: videoDuration || 60,
       })
       alert('上传成功！')
       setShowUpload(false)
       setUploadForm({ title: '', description: '', category: '', tags: '' })
+      setVideoDuration(0)
       fetchData()
     } catch (e) {
       setMessage('上传失败: ' + e.message)
@@ -150,7 +152,14 @@ function Profile() {
             {showUpload && (
               <form onSubmit={handleUpload}>
                 <label style={{display: "block", marginBottom: "5px", color: "#888"}}>视频文件 *</label>
-                <input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files[0])} required style={{marginBottom: "15px", width: "100%"}} />
+                <input type="file" accept="video/*" onChange={e => setVideoFile(e.target.files[0])
+      const file = e.target.files[0]
+      if (file) {
+        const video = document.createElement("video")
+        video.preload = "metadata"
+        video.onloadedmetadata = () => setVideoDuration(Math.round(video.duration))
+        video.src = URL.createObjectURL(file)
+      }} required style={{marginBottom: "15px", width: "100%"}} />
                 <input type="file" accept="image/*" onChange={e => setThumbFile(e.target.files[0])} style={{marginBottom: "15px", width: "100%"}} />
                 <input type="text" placeholder="标题" value={uploadForm.title} onChange={e => setUploadForm({...uploadForm, title: e.target.value})} required style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}} />
                 <textarea placeholder="描述" value={uploadForm.description} onChange={e => setUploadForm({...uploadForm, description: e.target.value})} required rows={2} style={{marginBottom: '10px', width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}} />
