@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getIsOwner } from '../api'
 
 function Header() {
-  const [isOwner, setIsOwner] = useState(false)
+  const [isOwner, setIsOwner] = useState(() => {
+    return localStorage.getItem('is_owner') === 'true'
+  })
   
   useEffect(() => {
-    setIsOwner(getIsOwner())
+    const handleStorage = () => {
+      setIsOwner(localStorage.getItem('is_owner') === 'true')
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
   }, [])
   
   return (
