@@ -6,6 +6,7 @@ import { api, getIsOwner } from '../api'
 function Manage() {
   const navigate = useNavigate()
   const [videos, setVideos] = useState([])
+  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [editing, setEditing] = useState(null)
@@ -21,8 +22,12 @@ function Manage() {
 
   const loadData = async () => {
     setLoading(true)
-    const data = await api.getVideos()
-    setVideos(data)
+    const [videosData, categoriesData] = await Promise.all([
+      api.getVideos(),
+      api.getCategories()
+    ])
+    setVideos(videosData)
+    setCategories(categoriesData)
     setLoading(false)
   }
 
@@ -82,16 +87,10 @@ function Manage() {
         <div style={{maxWidth: '900px', margin: '0 auto'}}>
           <h1>作品管理</h1>
           {message && <div style={{marginBottom: '20px', color: '#ff6b6b'}}>{message}</div>}
-          
           <Link to="/profile/1" style={{display: 'inline-block', marginBottom: '20px'}}>← 返回个人主页</Link>
           
           {videos.map(video => (
-            <div key={video.id} style={{
-              background: 'var(--bg-card)',
-              borderRadius: '12px',
-              padding: '20px',
-              marginBottom: '15px'
-            }}>
+            <div key={video.id} style={{background: 'var(--bg-card)', borderRadius: '12px', padding: '20px', marginBottom: '15px'}}>
               {editing === video.id ? (
                 <div>
                   <div style={{marginBottom: '10px'}}>
@@ -106,13 +105,7 @@ function Manage() {
                     <label style={{display: 'block', marginBottom: '5px', color: '#888'}}>分类</label>
                     <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} style={{width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'white'}}>
                       <option value="">选择分类</option>
-                      <option value="广告宣传">广告宣传</option>
-                      <option value="产品展示">产品展示</option>
-                      <option value="游戏">游戏</option>
-                      <option value="文化">文化</option>
-                      <option value="金融">金融</option>
-                      <option value="短视频">短视频</option>
-                      <option value="纪录片">纪录片</option>
+                      {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                     </select>
                   </div>
                   <div style={{marginBottom: '10px'}}>
@@ -131,9 +124,7 @@ function Manage() {
                     <p style={{color: '#888', fontSize: '14px', margin: '5px 0'}}>{video.description}</p>
                     <div style={{fontSize: '12px', color: '#666'}}>
                       <span style={{background: 'var(--accent)', padding: '3px 10px', borderRadius: '10px', marginRight: '10px'}}>{video.category}</span>
-                      {video.tags.map(tag => (
-                        <span key={tag} style={{marginRight: '8px'}}>#{tag}</span>
-                      ))}
+                      {video.tags.map(tag => <span key={tag} style={{marginRight: '8px'}}>#{tag}</span>)}
                     </div>
                   </div>
                   <div style={{display: 'flex', gap: '10px'}}>
