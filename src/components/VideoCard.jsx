@@ -1,9 +1,17 @@
 import { Link } from 'react-router-dom'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 
 function VideoCard({ video }) {
   const videoRef = useRef(null)
+  const [duration, setDuration] = useState(video.duration || 0)
   
+  const formatDuration = (seconds) => {
+    if (!seconds) return '0:00'
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.round(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
   const formatViews = (views) => {
     if (views >= 10000) return (views / 10000).toFixed(1) + '万'
     return views
@@ -18,9 +26,10 @@ function VideoCard({ video }) {
           muted 
           playsInline 
           onLoadedMetadata={e => {
-            video.duration = Math.round(e.target.duration)
+            setDuration(Math.round(e.target.duration))
           }}
         />
+        {duration > 0 && <span className="duration">{formatDuration(duration)}</span>}
       </div>
       <div className="video-info">
         <h3>{video.title}</h3>
