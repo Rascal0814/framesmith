@@ -53,7 +53,7 @@ function Profile() {
       setIsOwner(owner)
       if (owner) {
         setMessage('验证成功！')
-        window.location.reload()
+        window.location.href = '/framesmith/profile/1'
       } else {
         setMessage('Token 有效但你不是所有者')
       }

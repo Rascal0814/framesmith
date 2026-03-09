@@ -220,7 +220,7 @@ export const api = {
     if (USE_MOCK) return MOCK_CATEGORIES;
     try {
       const token = getToken();
-      const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/public/categories.json`;
+      const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/categories.json`;
       const response = await fetch(url, { headers: token ? { 'Authorization': `token ${token}` } : {} });
       if (response.ok) {
         const data = await response.json();
@@ -233,7 +233,7 @@ export const api = {
   saveCategories: async (categories) => {
     const token = getToken();
     if (!token || !getIsOwner()) throw new Error('无权限');
-    const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/public/categories.json`;
+    const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/categories.json`;
     let sha = null;
     try {
       const resp = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
